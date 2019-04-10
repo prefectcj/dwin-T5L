@@ -1,0 +1,1 @@
+"sys.c" BROWSE INCDIR(..\T5L) DEBUG OBJECTEXTEND OBJECT(.\obj\sys.obj)

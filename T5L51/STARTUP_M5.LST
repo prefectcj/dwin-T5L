@@ -1,0 +1,56 @@
+A51 MACRO ASSEMBLER  STARTUP_M5                                                           03/25/2019 09:33:11 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.02
+OBJECT MODULE PLACED IN .\obj\STARTUP_M5.obj
+ASSEMBLER INVOKED BY: C:\Keil\C51\BIN\A51.EXE STARTUP_M5.A51 SET(SMALL) DEBUG OBJECT(.\obj\STARTUP_M5.obj) EP
+
+LOC  OBJ            LINE     SOURCE
+
+                       1     $nomod51 
+                       2     ;------------------------------------------------------------------------------
+                       3     ;  This file is part of the C51 Compiler package
+                       4     ;  Startup Code for the Capital Micro AS1E5 device
+                       5     ;  Copyright (c) 2001-2005 Keil Elektronik GmbH and Keil Software, Inc.
+                       6     ;  Version 1.00
+                       7     ;
+                       8     ;  *** <<< Use Configuration Wizard in Context Menu >>> ***
+                       9     ;------------------------------------------------------------------------------
+                      10     ;  STARTUP_AS1E5.A51:  This code is executed after processor reset.
+                      11     ;
+                      12     ;  To translate this file use A51 with the following invocation:
+                      13     ;
+                      14     ;     A51 STARTUP_CME3000.A51
+                      15     ;
+                      16     ;  To link the modified STARTUP_CME3000.OBJ file to your application use the following
+                      17     ;  Lx51 invocation:
+                      18     ;
+                      19     ;     Lx51 your object file list, STARTUP_CME3000.OBJ  controls
+                      20     ;
+                      21     ;------------------------------------------------------------------------------
+                      22     
+----                  23                     CSEG    AT  0F8H
+00F8 FFFF             24                     DB  0FFH,0FFH
+00FA 4457494E         25                     DB  'DWINT5'
+00FE 5435                    
+                      26     
+                      27                     EXTRN CODE (?C_START)
+                      28     
+0100 020000   F       29                     LJMP    ?C_START
+                      30     
+                      31                     END
+A51 MACRO ASSEMBLER  STARTUP_M5                                                           03/25/2019 09:33:11 PAGE     2
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES
+
+?C_START . . . . .  C ADDR   -----       EXT
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)

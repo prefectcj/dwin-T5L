@@ -1,0 +1,29 @@
+<html>
+<body>
+<pre>
+<h1>礦ision Build Log</h1>
+<h2>Project:</h2>
+C:\工作\T5L\C工程\T5L\T5L.uvproj
+Project File Date:  03/26/2019
+
+<h2>Output:</h2>
+Build target 'Target 1'
+compiling sys.c...
+linking...
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_DELAYS_MS?SYS
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?T0_INIT?SYS
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_READ_DGUSII_VP?SYS
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_WRITE_DGUSII_VP?SYS
+Program Size: data=37.0 xdata=0 code=1486
+creating hex file from ".\obj\T5L"...
+User command #1: .\obj\1.bat
+C:\工作\T5L\C工程\T5L>cd obj 
+C:\工作\T5L\C工程\T5L\obj>srec_cat.exe T5L.hex -Intel -o T5L.bin -Binary  
+srec_cat: T5L.hex: 2: warning: data records not in strictly ascending order
+    (expected >= 0x0103, got 0x00DA)
+C:\工作\T5L\C工程\T5L\obj>echo.
+".\obj\T5L" - 0 Error(s), 4 Warning(s).

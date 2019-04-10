@@ -1,0 +1,5 @@
+".\obj\STARTUP_M5.obj",
+".\obj\main.obj",
+".\obj\sys.obj" 
+TO ".\obj\T5L" 
+PRINT(".\T5L.m51") RAMSIZE(256) 

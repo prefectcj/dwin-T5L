@@ -1,0 +1,487 @@
+C51 COMPILER V9.01   SYS                                                                   04/10/2019 20:28:21 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE SYS
+OBJECT MODULE PLACED IN .\obj\sys.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE sys.c BROWSE INCDIR(..\T5L) DEBUG OBJECTEXTEND OBJECT(.\obj\sys.obj)
+
+line level    source
+
+   1          #include "sys.h"
+   2          #include <intrins.h>
+   3          
+   4          
+   5          u16 count=0;
+   6          static u16 SysTick=0;
+   7          
+   8          
+   9           /**
+  10              * @brief 软件ms延时
+  11              *   软件延时    振荡周期T=1/206438400 
+  12              * @param [in] 
+  13              *      n:延时ms
+  14              * @param [out]
+  15              *      无
+  16              * @retval 
+  17              *      无
+  18              */
+  19          void delays_ms(u16 n)
+  20          {
+  21   1          int i,j;
+  22   1          for(i=0;i<n;i++)
+  23   1              for(j=0;j<17203;j++);    
+  24   1      }
+  25          
+  26          
+  27          
+  28           /**
+  29              * @brief INIT CPU
+  30              *   初始化OS的外设，其中有初始化UART2,UART3，关闭开门狗，IO口驱动强度+/-8mA
+  31              *   UART4，UART5，定时器T0 T1 T2，只开启UART2/UART3,其余外设没有开启
+  32              * @param  无
+  33              *
+  34              *   
+  35              * @retval   无
+  36              * 
+  37              */  
+  38          void INIT_CPU(void)
+  39          {
+  40   1          EA=0;
+  41   1          RS0=0;
+  42   1          RS1=0;
+  43   1          //SP=0xC0;
+  44   1      
+  45   1          CKCON=0x00;
+  46   1          T2CON=0x70;
+  47   1          DPC=0x00;
+  48   1          PAGESEL=0x01;
+  49   1          D_PAGESEL=0x02;   //DATA RAM  0x8000-0xFFFF
+  50   1          MUX_SEL=0x60;   //UART2,UART2开启，WDT关闭
+  51   1          RAMMODE=0x00;
+  52   1          PORTDRV=0x01;   //驱动强度+/-8mA
+  53   1          IEN0=0x00;      //关闭所有中断
+  54   1          IEN1=0x00;
+  55   1          IEN2=0x00;
+C51 COMPILER V9.01   SYS                                                                   04/10/2019 20:28:21 PAGE 2   
+
+  56   1          IP0=0x00;      //中断优先级默认
+  57   1          IP1=0x00;
+  58   1      
+  59   1          WDT_OFF();      //关闭开门狗
+  60   1      
+  61   1          //IO口配置
+  62   1          P0=0x00;
+  63   1          P1=0x00;
+  64   1          P2=0x00;
+  65   1          P3=0x00;
+  66   1          P0MDOUT=0x50;
+  67   1          P1MDOUT=0xFF;
+  68   1          P2MDOUT=0x00; 
+  69   1          P3MDOUT=0x0F;
+  70   1      
+  71   1          //UART2配置8N1  15200
+  72   1          ADCON=0x80;
+  73   1          SCON0=0x50;
+  74   1          SREL0H=0x03;        //FCLK/64*(1024-SREL1)
+  75   1          SREL0L=0xE4;
+  76   1      
+  77   1          //UART3配置8N1   115200
+  78   1          SCON1=0x50;
+  79   1          SREL1H=0x03;       //FCLK/64*(1024-SREL1)
+  80   1          SREL1L=0xC8;
+  81   1      
+  82   1          //UART4配置8N1      115200
+  83   1          SCON2T=0x80;
+  84   1          SCON2R=0x80;
+  85   1          BODE2_DIV_H=0x00;     //FCLK/8*DIV
+  86   1          BODE2_DIV_L=0xE0;
+  87   1      
+  88   1          //UART5配置8N1      115200
+  89   1          SCON3T=0x80;
+  90   1          SCON3R=0x80;
+  91   1          BODE3_DIV_H=0x00;       //FCLK/8*DIV
+  92   1          BODE3_DIV_L=0xE0;
+  93   1      
+  94   1          
+  95   1          TMOD=0x11;          //16位定时器
+  96   1          //T0
+  97   1          TH0=0x00;
+  98   1          TL0=0x00;
+  99   1          TR0=0x00;
+ 100   1      
+ 101   1          //T1
+ 102   1          TH1=0x00;
+ 103   1          TL1=0x00;
+ 104   1          TR1=0x00;
+ 105   1          
+ 106   1          TCON=0x05;      //外部中断下降沿触发
+ 107   1      
+ 108   1          //T2  Autoload模式
+ 109   1          T2CON=0x70;
+ 110   1          TH2=0x00;
+ 111   1          TL2=0x00;
+ 112   1          TRL2H=0xBC;
+ 113   1          TRL2L=0xCD;        //1ms的定时器
+ 114   1      
+ 115   1      }
+ 116          
+ 117           /**
+C51 COMPILER V9.01   SYS                                                                   04/10/2019 20:28:21 PAGE 3   
+
+ 118              * @brief 定时器T0初始化
+ 119              *        初始化定时器T0，定时间隔为1ms
+ 120              * @param [in] 
+ 121              *      无
+ 122              * @param [out]
+ 123              *      无
+ 124              * @retval 
+ 125              *      无
+ 126              */
+ 127          void T0_Init(void)
+ 128          {
+ 129   1          TMOD|=0x01;
+ 130   1          TH0=T1MS>>8;        //1ms定时器
+ 131   1          TL0=T1MS;
+ 132   1          ET0=1;              //开启定时器0中断
+ 133   1          EA=1;               //开总中断
+ 134   1          TR0=1;              //开启定时器
+ 135   1      }
+ 136          
+ 137           /**
+ 138              * @brief 定时器T2初始化
+ 139              *        初始化定时器T2，定时间隔为1ms
+ 140              * @param [in] 
+ 141              *      无
+ 142              * @param [out]
+ 143              *      无
+ 144              * @retval 
+ 145              *      无
+ 146              */
+ 147          void T2_Init(void)
+ 148          {
+ 149   1          T2CON=0x70;
+ 150   1          TH2=0x00;
+ 151   1          TL2=0x00;
+ 152   1          TRL2H=0xBC;
+ 153   1          TRL2L=0xCD;        //1ms的定时器
+ 154   1          IEN0|=0x20;     //开启定时器2
+ 155   1          TR2=0x01;
+ 156   1      }
+ 157          
+ 158          
+ 159           /**
+ 160              * @brief 读DGUS II VP数据
+ 161              *        一次读写必须是4个字节，因为读写len长度是以字为单位，
+ 162              *       所以读写数据分为4中不同情况，情况不同，读写不一样
+ 163              * @param [in] 
+ 164              *      addr:VP首地址
+ 165              *      len: 读VP字长度
+ 166              * @param [out]
+ 167              *      buf:读取数据保存，buf字节长度为len*2
+ 168              * @retval 
+ 169              *      无
+ 170              */  
+ 171          void read_dgusii_vp(int addr,char* buf,int len)
+ 172          {
+ 173   1          int OS_addr=0,OS_addr_offset=0;
+ 174   1          int OS_len=0,OS_len_offset=0;
+ 175   1          EA=0;
+ 176   1          OS_addr=addr/2;
+ 177   1          OS_addr_offset=addr%2;
+ 178   1          ADR_H=(u8)(OS_addr>>16)&0xFF;
+ 179   1          ADR_M=(u8)(OS_addr>>8)&0xFF;
+C51 COMPILER V9.01   SYS                                                                   04/10/2019 20:28:21 PAGE 4   
+
+ 180   1          ADR_L=(u8)OS_addr&0xFF;
+ 181   1          ADR_INC=1;                 //DGUS  OS存储器地址在读写后自动加1
+ 182   1          RAMMODE=0xAF;               //启动读模式
+ 183   1          if(OS_addr_offset==1)       //首地址有偏移，修正
+ 184   1          {
+ 185   2              while(APP_ACK==0);      //等待
+ 186   2              APP_EN=1;
+ 187   2              while(APP_EN==1); 
+ 188   2              *buf++=DATA1;
+ 189   2              *buf++=DATA0;              
+ 190   2              len--;
+ 191   2              OS_addr_offset=0;
+ 192   2          }
+ 193   1          OS_len=len/2;
+ 194   1          OS_len_offset=len%2;
+ 195   1          if(OS_len_offset==1)
+ 196   1          {
+ 197   2               OS_len++;
+ 198   2          }
+ 199   1          while(OS_len--)
+ 200   1          {
+ 201   2              if((OS_len_offset==1)&&(OS_len==0))
+ 202   2              {           
+ 203   3                  while(APP_ACK==0);
+ 204   3                  APP_EN=1;
+ 205   3                  while(APP_EN==1);       //读写执行结束
+ 206   3                  *buf++=DATA3;
+ 207   3                  *buf++=DATA2;           
+ 208   3                  break;    
+ 209   3              } 
+ 210   2              while(APP_ACK==0);
+ 211   2              APP_EN=1;
+ 212   2              while(APP_EN==1);       //读写执行结束 
+ 213   2              *buf++=DATA3;
+ 214   2              *buf++=DATA2;
+ 215   2              *buf++=DATA1;
+ 216   2              *buf++=DATA0;                          
+ 217   2          }   
+ 218   1          RAMMODE=0x00;           //读写完成后RAMMODE必须置零
+ 219   1          EA=1;         
+ 220   1      }
+ 221          
+ 222          
+ 223           /**
+ 224              * @brief 写DGUS II VP数据
+ 225              *        一次读写必须是4个字节，因为读写len长度是以字为单位，
+ 226              *       所以读写数据分为4中不同情况，情况不同，读写不一样
+ 227              * @param [in] 
+ 228              *      addr:VP首地址
+ 229              *      len: 写VP字长度
+ 230              * @param [out]
+ 231              *      buf:读取数据保存，buf字节长度为len*2
+ 232              * @retval 
+ 233              *      无
+ 234              */ 
+ 235          void write_dgusii_vp(int addr,u8* buf,int len)
+ 236          {
+ 237   1          int OS_addr=0,OS_addr_offset=0;
+ 238   1          int OS_len=0,OS_len_offset=0;
+ 239   1          EA=0;
+ 240   1          OS_addr=addr/2;
+ 241   1          OS_addr_offset=addr%2; 
+C51 COMPILER V9.01   SYS                                                                   04/10/2019 20:28:21 PAGE 5   
+
+ 242   1          ADR_H=(u8)(OS_addr>>16)&0xFF;
+ 243   1          ADR_M=(u8)(OS_addr>>8)&0xFF;
+ 244   1          ADR_L=(u8)OS_addr&0xFF;
+ 245   1          ADR_INC=0x01;                 //DGUS  OS存储器地址在读写后自动加1
+ 246   1          RAMMODE=0x8F;               //启动写模式 
+ 247   1          if(OS_addr_offset==1)
+ 248   1          {
+ 249   2              ADR_INC=0;                     
+ 250   2              RAMMODE=0xAF;
+ 251   2              while(APP_ACK==0);
+ 252   2              APP_EN=1;
+ 253   2              while(APP_EN==1);       //读写执行结束
+ 254   2              ADR_INC=0x01; 
+ 255   2              RAMMODE=0x8F;
+ 256   2              while(APP_ACK==0);      
+ 257   2              DATA1=*buf++;
+ 258   2              DATA0=*buf++;
+ 259   2              APP_EN=1;
+ 260   2              while(APP_EN==1);       //读写执行结束
+ 261   2              len--;
+ 262   2              OS_addr_offset=0;
+ 263   2          }
+ 264   1          OS_len=len/2;
+ 265   1          OS_len_offset=len%2; 
+ 266   1          if(OS_len_offset==1)
+ 267   1          {
+ 268   2               OS_len++;
+ 269   2          } 
+ 270   1          while(OS_len--)
+ 271   1          {
+ 272   2              if((OS_len_offset==1)&&(OS_len==0))
+ 273   2              {
+ 274   3                  ADR_INC=0;
+ 275   3                  RAMMODE=0xAF;
+ 276   3                  while(APP_ACK==0);
+ 277   3                  APP_EN=1;                //增加一个读过程，以免写单字时会将另一个单字写0
+ 278   3                  while(APP_EN==1);       //读写执行结束
+ 279   3                  ADR_INC=0x01;
+ 280   3                  RAMMODE=0x8F;
+ 281   3                  while(APP_ACK==0);           
+ 282   3                  DATA3=*buf++;
+ 283   3                  DATA2=*buf++;
+ 284   3                  APP_EN=1;
+ 285   3                  while(APP_EN==1);       //读写执行结束
+ 286   3                  break;
+ 287   3              }
+ 288   2              while(APP_ACK==0);        
+ 289   2              DATA3=*buf++;
+ 290   2              DATA2=*buf++;
+ 291   2              DATA1=*buf++;
+ 292   2              DATA0=*buf++;
+ 293   2              APP_EN=1;
+ 294   2              while(APP_EN==1);       //读写执行结束
+ 295   2          } 
+ 296   1          RAMMODE=0x00;       //读写完成后RAMMODE必须置零
+ 297   1          EA=1;  
+ 298   1      }  
+ 299          
+ 300          
+ 301          
+ 302          
+ 303           /**
+C51 COMPILER V9.01   SYS                                                                   04/10/2019 20:28:21 PAGE 6   
+
+ 304              * @brief 中断处理函数，中断号已经定义好了，不需要再进行修改
+ 305              *        using n:可以不需要，因为OS CPU的处理已经很快了，尽量不要中断嵌套
+ 306              *       已经改成了接口函数的定时，是否需要增加interrupt n，这个需要在确认下，有板子后，可以测试下
+ 307              * @param [in] 
+ 308              *      无
+ 309              * @param [out]
+ 310              *      无
+ 311              * @retval 
+ 312              *      无
+ 313              */ 
+ 314          void EX0_ISR_PC(void)    interrupt 0
+ 315          {
+ 316   1          EA=0;
+ 317   1          //code
+ 318   1          EA=1;
+ 319   1      }
+ 320          
+ 321          
+ 322           /**
+ 323              * @brief 定时器T0中断处理函数
+ 324              *        用户自己定义
+ 325              * @param [in] 
+ 326              *      无
+ 327              * @param [out]
+ 328              *      无
+ 329              * @retval 
+ 330              *      无
+ 331              */
+ 332          void T0_ISR_PC(void)    interrupt 1
+ 333          {
+ 334   1          static u16 i=0;
+ 335   1          EA=0;
+ 336   1          TH0=T1MS>>8;
+ 337   1          TL0=T1MS;
+ 338   1          i++;
+ 339   1          if(i>=1000)
+ 340   1          {
+ 341   2              i=0;
+ 342   2              P1_0=!P1_0;        
+ 343   2              count++; 
+ 344   2          }          
+ 345   1          EA=1;
+ 346   1      }
+ 347          
+ 348          void EX1_ISR_PC(void)    interrupt 2
+ 349          {
+ 350   1          EA=0;
+ 351   1          //code
+ 352   1          EA=1;
+ 353   1      }
+ 354          
+ 355          void T1_ISR_PC(void)    interrupt 3
+ 356          {
+ 357   1          EA=0;
+ 358   1          //code
+ 359   1          EA=1;
+ 360   1      }
+ 361          
+ 362          void UART2_ISR_PC(void)    interrupt 4
+ 363          {
+ 364   1          EA=0;
+ 365   1          //code
+C51 COMPILER V9.01   SYS                                                                   04/10/2019 20:28:21 PAGE 7   
+
+ 366   1          EA=1;
+ 367   1      }
+ 368          
+ 369          
+ 370           /**
+ 371              * @brief 定时器T2延时
+ 372              *   定时器T2延时，精准延时 
+ 373              * @param [in] 
+ 374              *      n:延时ms
+ 375              * @param [out]
+ 376              *      无
+ 377              * @retval 
+ 378              *      无
+ 379              */
+ 380          void delay_ms(u16 n)
+ 381          {
+ 382   1          SysTick=n;
+ 383   1          while(SysTick)
+ 384   1          {
+ 385   2              if(ET2==0)
+ 386   2              {   
+ 387   3                  SysTick--;
+ 388   3                  ET2=1;
+ 389   3              }
+ 390   2          }    
+ 391   1      }
+ 392          
+ 393          void T2_ISR_PC(void)    interrupt 5
+ 394          {
+ 395   1          TF2=0;    
+ 396   1          SysTick--;    
+ 397   1      }
+ 398          
+ 399          
+ 400          void CAN_ISR_PC(void)    interrupt 9
+ 401          {
+ 402   1          EA=0;
+ 403   1          //code
+ 404   1          EA=1;
+ 405   1      }
+ 406          
+ 407          void UART4_TX_ISR_PC(void)    interrupt 10
+ 408          {
+ 409   1          EA=0;
+ 410   1          //code
+ 411   1          EA=1;
+ 412   1      }
+ 413          
+ 414          void UART4_RX_ISR_PC(void)    interrupt 11
+ 415          {
+ 416   1          EA=0;
+ 417   1          //code
+ 418   1          EA=1;
+ 419   1      }
+ 420          
+ 421          void UART5_TX_ISR_PC(void)    interrupt 12
+ 422          {
+ 423   1          EA=0;
+ 424   1          //code
+ 425   1          EA=1;
+ 426   1      }
+ 427          
+C51 COMPILER V9.01   SYS                                                                   04/10/2019 20:28:21 PAGE 8   
+
+ 428          void UART5_RX_ISR_PC(void)    interrupt 13
+ 429          {
+ 430   1          EA=0;
+ 431   1          //code
+ 432   1          EA=1;
+ 433   1      }
+ 434          
+ 435          void UART3_ISR_PC(void)    interrupt 16
+ 436          {
+ 437   1          EA=0;
+ 438   1          //code
+ 439   1          EA=1;
+ 440   1      }
+ 441          
+ 442          
+ 443          
+ 444          
+ 445          
+ 446          
+ 447          
+ 448          
+ 449          
+ 450          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1082    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      6      22
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
